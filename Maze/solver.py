@@ -84,3 +84,74 @@ class MazeSolver:
             current = current.parent
 
         return path[::-1]
+    def solve_dijkstra(self, start, end):
+        """
+        Dijkstra: أقصر مسار بدون heuristic
+        """
+        self._reset_distances()
+        start.distance = 0
+
+        pq = [(0, start)]
+
+        while pq:
+            dist, current = heapq.heappop(pq)
+
+            if current.visited:
+                continue
+
+            current.visited = True
+
+            if current == end:
+                return self._reconstruct_path(end)
+
+            for neighbor in self._get_valid_neighbors(current):
+                new_dist = current.distance + 1
+                if new_dist < neighbor.distance:
+                    neighbor.distance = new_dist
+                    neighbor.parent = current
+                    heapq.heappush(pq, (neighbor.distance, neighbor))
+
+        return []
+
+    def solve_astar(self, start, end):
+        """
+        A*: Dijkstra + heuristic (Manhattan)
+        """
+        self._reset_distances()
+        start.distance = 0
+
+        pq = [(self._heuristic(start, end), start)]
+
+        while pq:
+            _, current = heapq.heappop(pq)
+
+            if current.visited:
+                continue
+
+            current.visited = True
+
+            if current == end:
+                return self._reconstruct_path(end)
+
+            for neighbor in self._get_valid_neighbors(current):
+                tentative_g = current.distance + 1
+                if tentative_g < neighbor.distance:
+                    neighbor.distance = tentative_g
+                    neighbor.parent = current
+                    f = tentative_g + self._heuristic(neighbor, end)
+                    heapq.heappush(pq, (f, neighbor))
+
+        return []
+
+    def _heuristic(self, a, b):
+        """
+        Manhattan Distance
+        """
+        return abs(a.row - b.row) + abs(a.col - b.col)
+
+    def _reset_distances(self):
+        for row in self.maze.grid:
+            for cell in row:
+                cell.visited = False
+                cell.distance = float("inf")
+                cell.parent = None
