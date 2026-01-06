@@ -1,91 +1,120 @@
 import heapq
-import itertools
-from collections import deque
+from itertools import count
+from typing import Dict, List, Optional
+from .cell import Cell
+from .maze import Maze
+
+INF = float("inf")
 
 class MazeSolver:
-    def __init__(self, maze):
+    def __init__(self, maze: Maze):
         self.maze = maze
 
-    def solve_bfs(self, start, end):
-        queue = deque([start])
-        visited = {start}
-        parent = {}
+    def _reconstruct_path(
+        self,
+        came_from: Dict[Cell, Optional[Cell]],
+        start: Cell,
+        end: Cell
+    ) -> List[Cell]:
+        if end not in came_from and end != start:
+            return []
 
-        while queue:
-            current = queue.popleft()
-            if current == end:
-                return self._path(parent, start, end)
+        path = []
+        current = end
+        while current != start:
+            path.append(current)
+            current = came_from[current]
+        path.append(start)
+        path.reverse()
+        return path
 
-            for n in self.maze.get_neighbors(current):
-                if n not in visited:
-                    visited.add(n)
-                    parent[n] = current
-                    queue.append(n)
-        return []
-
-    def solve_dfs(self, start, end):
+    # ---------------- DFS ----------------
+    def solve_dfs(self, start: Cell, end: Cell) -> List[Cell]:
         stack = [start]
+        came_from = {}
         visited = {start}
-        parent = {}
 
         while stack:
             current = stack.pop()
             if current == end:
-                return self._path(parent, start, end)
+                break
 
-            for n in self.maze.get_neighbors(current):
+            for n in current.neighbors:
                 if n not in visited:
                     visited.add(n)
-                    parent[n] = current
+                    came_from[n] = current
                     stack.append(n)
-        return []
 
-    def solve_dijkstra(self, start, end):
-        counter = itertools.count()
-        pq = [(0, next(counter), start)]
+        return self._reconstruct_path(came_from, start, end)
+
+    # ---------------- BFS ----------------
+    def solve_bfs(self, start: Cell, end: Cell) -> List[Cell]:
+        from collections import deque
+        queue = deque([start])
+        came_from = {}
+        visited = {start}
+
+        while queue:
+            current = queue.popleft()
+            if current == end:
+                break
+
+            for n in current.neighbors:
+                if n not in visited:
+                    visited.add(n)
+                    came_from[n] = current
+                    queue.append(n)
+
+        return self._reconstruct_path(came_from, start, end)
+
+    # ---------------- Dijkstra ----------------
+    def solve_dijkstra(self, start: Cell, end: Cell) -> List[Cell]:
+        pq = []
+        counter = count()
+        heapq.heappush(pq, (0, next(counter), start))
+
         dist = {start: 0}
-        parent = {}
+        came_from = {}
 
         while pq:
-            d, _, current = heapq.heappop(pq)
+            cost, _, current = heapq.heappop(pq)
+
             if current == end:
-                return self._path(parent, start, end)
+                break
 
-            for n in self.maze.get_neighbors(current):
-                nd = d + 1
-                if n not in dist or nd < dist[n]:
-                    dist[n] = nd
-                    parent[n] = current
-                    heapq.heappush(pq, (nd, next(counter), n))
-        return []
+            for n in current.neighbors:
+                new_cost = cost + 1
+                if new_cost < dist.get(n, INF):
+                    dist[n] = new_cost
+                    came_from[n] = current
+                    heapq.heappush(pq, (new_cost, next(counter), n))
 
-    def solve_a_star(self, start, end):
-        counter = itertools.count()
-        pq = [(0, next(counter), start)]
-        g = {start: 0}
-        parent = {}
+        return self._reconstruct_path(came_from, start, end)
+
+    # ---------------- A* ----------------
+    def solve_a_star(self, start: Cell, end: Cell) -> List[Cell]:
+        def heuristic(a: Cell, b: Cell):
+            return abs(a.row - b.row) + abs(a.col - b.col)
+
+        pq = []
+        counter = count()
+        heapq.heappush(pq, (0, next(counter), start))
+
+        came_from = {}
+        g_score = {start: 0}
 
         while pq:
             _, _, current = heapq.heappop(pq)
+
             if current == end:
-                return self._path(parent, start, end)
+                break
 
-            for n in self.maze.get_neighbors(current):
-                temp = g[current] + 1
-                if n not in g or temp < g[n]:
-                    g[n] = temp
-                    f = temp + abs(n.row - end.row) + abs(n.col - end.col)
-                    parent[n] = current
+            for n in current.neighbors:
+                tentative = g_score[current] + 1
+                if tentative < g_score.get(n, INF):
+                    came_from[n] = current
+                    g_score[n] = tentative
+                    f = tentative + heuristic(n, end)
                     heapq.heappush(pq, (f, next(counter), n))
-        return []
 
-    def _path(self, parent, start, end):
-        path = []
-        cur = end
-        while cur != start:
-            path.append(cur)
-            cur = parent.get(cur)
-            if cur is None:
-                return []
-        path.append(start)
-        return path[::-1]
+        return self._reconstruct_path(came_from, start, end)

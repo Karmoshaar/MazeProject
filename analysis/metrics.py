@@ -1,45 +1,32 @@
-import time
-import tracemalloc
-
-
-class PerformanceMetrics:
+class Metrics :
     def __init__(self):
-        self.results = {}
+        pass
 
-    def measure(self, name, solver_function, *args):
-        """
-        قياس الزمن، عدد الخطوات، والذاكرة
-        """
+    def measure(self, name, func, *args):
+        import time
+        import tracemalloc
+
         tracemalloc.start()
         start_time = time.perf_counter()
 
-        path = solver_function(*args)
+        path = func(*args)
 
         end_time = time.perf_counter()
         current, peak = tracemalloc.get_traced_memory()
         tracemalloc.stop()
 
-        self.results[name] = {
-            "time_ms": (end_time - start_time) * 1000,
+        return {
+            "name": name,
+            "time": (end_time - start_time) * 1000,
             "steps": len(path),
-            "memory_kb": peak / 1024
+            "memory": peak / 1024
         }
 
-        return path
-
-    def print_results(self):
-        """
-        طباعة النتائج بشكل جدول
-        """
+    def print_results(self, results):
         print("\nAlgorithm Performance Comparison")
         print("-" * 45)
-        print(f"{'Algorithm':<12} | {'Time(ms)':<10} | {'Steps':<7} | {'Memory(KB)':<10}")
+        print(f"{'Algorithm':<12} | {'Time(ms)':<9} | {'Steps':<7} | {'Memory(KB)'}")
         print("-" * 45)
 
-        for algo, data in self.results.items():
-            print(
-                f"{algo:<12} | "
-                f"{data['time_ms']:<10.2f} | "
-                f"{data['steps']:<7} | "
-                f"{data['memory_kb']:<10.2f}"
-            )
+        for r in results:
+            print(f"{r['name']:<12} | {r['time']:<9.2f} | {r['steps']:<7} | {r['memory']:.2f}")
