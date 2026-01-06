@@ -37,7 +37,7 @@ def main():
     path_dijkstra = metrics.measure("Dijkstra", solver.solve_dijkstra, start, end)
     maze.reset_cells()
 
-    path_astar = metrics.measure("A*", solver.solve_astar, start, end)
+    path_astar = metrics.measure("A*", solver.solve_a_star, start, end)
 
     # طباعة نتائج المقارنة
     metrics.print_results()
