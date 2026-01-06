@@ -1,47 +1,33 @@
 import random
 
-
 class MazeGenerator:
     def __init__(self, maze):
-        """
-        يستقبل كائن Maze
-        """
         self.maze = maze
+        self.visited = set()
 
-    def generate(self, start_row=0, start_col=0):
-        """
-        توليد المتاهة باستخدام Recursive Backtracking
-        """
-        start_cell = self.maze.get_cell(start_row, start_col)
-        self._backtrack(start_cell)
+    def generate(self, r=0, c=0):
+        cell = self.maze.grid[r][c]
+        self.visited.add(cell)
 
-    def _backtrack(self, current):
-        """
-        الخوارزمية الأساسية (DFS + Backtracking)
-        """
-        current.visited = True
+        directions = ["top", "right", "bottom", "left"]
+        random.shuffle(directions)
 
-        # جلب الجيران غير المزورين بترتيب عشوائي
-        neighbors = self.maze.get_unvisited_neighbors(current)
-        random.shuffle(neighbors)
+        for d in directions:
+            nr, nc = r, c
+            if d == "top": nr -= 1
+            if d == "right": nc += 1
+            if d == "bottom": nr += 1
+            if d == "left": nc -= 1
 
-        for neighbor in neighbors:
-            if not neighbor.visited:
-                self._remove_walls(current, neighbor)
-                self._backtrack(neighbor)
-
-    def _remove_walls(self, current, next_cell):
-        """
-        إزالة الجدار بين خليتين متجاورتين
-        """
-        dr = next_cell.row - current.row
-        dc = next_cell.col - current.col
-
-        if dr == -1:  # next فوق current
-            current.remove_wall(next_cell, "top")
-        elif dr == 1:  # next تحت current
-            current.remove_wall(next_cell, "bottom")
-        elif dc == -1:  # next يسار current
-            current.remove_wall(next_cell, "left")
-        elif dc == 1:  # next يمين current
-            current.remove_wall(next_cell, "right")
+            if 0 <= nr < self.maze.rows and 0 <= nc < self.maze.cols:
+                neighbor = self.maze.grid[nr][nc]
+                if neighbor not in self.visited:
+                    cell.walls[d] = False
+                    opposite = {
+                        "top": "bottom",
+                        "right": "left",
+                        "bottom": "top",
+                        "left": "right"
+                    }
+                    neighbor.walls[opposite[d]] = False
+                    self.generate(nr, nc)

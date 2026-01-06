@@ -6,7 +6,6 @@ class MazeSolver:
     def __init__(self, maze):
         self.maze = maze
 
-    # ===================== BFS =====================
     def solve_bfs(self, start, end):
         queue = deque([start])
         visited = {start}
@@ -15,17 +14,15 @@ class MazeSolver:
         while queue:
             current = queue.popleft()
             if current == end:
-                return self._reconstruct_path(parent, start, end)
+                return self._path(parent, start, end)
 
-            for neighbor in self.maze.get_neighbors(current):
-                if neighbor not in visited:
-                    visited.add(neighbor)
-                    parent[neighbor] = current
-                    queue.append(neighbor)
-
+            for n in self.maze.get_neighbors(current):
+                if n not in visited:
+                    visited.add(n)
+                    parent[n] = current
+                    queue.append(n)
         return []
 
-    # ===================== DFS =====================
     def solve_dfs(self, start, end):
         stack = [start]
         visited = {start}
@@ -34,84 +31,61 @@ class MazeSolver:
         while stack:
             current = stack.pop()
             if current == end:
-                return self._reconstruct_path(parent, start, end)
+                return self._path(parent, start, end)
 
-            for neighbor in self.maze.get_neighbors(current):
-                if neighbor not in visited:
-                    visited.add(neighbor)
-                    parent[neighbor] = current
-                    stack.append(neighbor)
-
+            for n in self.maze.get_neighbors(current):
+                if n not in visited:
+                    visited.add(n)
+                    parent[n] = current
+                    stack.append(n)
         return []
 
-    # ===================== Dijkstra =====================
     def solve_dijkstra(self, start, end):
         counter = itertools.count()
-        pq = []
-        heapq.heappush(pq, (0, next(counter), start))
-
-        distances = {start: 0}
+        pq = [(0, next(counter), start)]
+        dist = {start: 0}
         parent = {}
 
         while pq:
-            dist, _, current = heapq.heappop(pq)
-
+            d, _, current = heapq.heappop(pq)
             if current == end:
-                return self._reconstruct_path(parent, start, end)
+                return self._path(parent, start, end)
 
-            for neighbor in self.maze.get_neighbors(current):
-                new_dist = dist + 1
-                if neighbor not in distances or new_dist < distances[neighbor]:
-                    distances[neighbor] = new_dist
-                    parent[neighbor] = current
-                    heapq.heappush(
-                        pq,
-                        (new_dist, next(counter), neighbor)
-                    )
-
+            for n in self.maze.get_neighbors(current):
+                nd = d + 1
+                if n not in dist or nd < dist[n]:
+                    dist[n] = nd
+                    parent[n] = current
+                    heapq.heappush(pq, (nd, next(counter), n))
         return []
 
-    # ===================== A* =====================
     def solve_a_star(self, start, end):
         counter = itertools.count()
-        pq = []
-        heapq.heappush(pq, (0, next(counter), start))
-
-        g_score = {start: 0}
+        pq = [(0, next(counter), start)]
+        g = {start: 0}
         parent = {}
 
         while pq:
             _, _, current = heapq.heappop(pq)
-
             if current == end:
-                return self._reconstruct_path(parent, start, end)
+                return self._path(parent, start, end)
 
-            for neighbor in self.maze.get_neighbors(current):
-                tentative_g = g_score[current] + 1
-
-                if neighbor not in g_score or tentative_g < g_score[neighbor]:
-                    g_score[neighbor] = tentative_g
-                    f_score = tentative_g + self._heuristic(neighbor, end)
-                    parent[neighbor] = current
-                    heapq.heappush(
-                        pq,
-                        (f_score, next(counter), neighbor)
-                    )
-
+            for n in self.maze.get_neighbors(current):
+                temp = g[current] + 1
+                if n not in g or temp < g[n]:
+                    g[n] = temp
+                    f = temp + abs(n.row - end.row) + abs(n.col - end.col)
+                    parent[n] = current
+                    heapq.heappush(pq, (f, next(counter), n))
         return []
 
-    # ===================== Helpers =====================
-    def _heuristic(self, a, b):
-        return abs(a.row - b.row) + abs(a.col - b.col)
-
-    def _reconstruct_path(self, parent, start, end):
+    def _path(self, parent, start, end):
         path = []
-        current = end
-        while current != start:
-            path.append(current)
-            current = parent.get(current)
-            if current is None:
+        cur = end
+        while cur != start:
+            path.append(cur)
+            cur = parent.get(cur)
+            if cur is None:
                 return []
         path.append(start)
-        path.reverse()
-        return path
+        return path[::-1]
