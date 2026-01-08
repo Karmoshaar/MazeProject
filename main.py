@@ -1,6 +1,6 @@
-from maze.maze import Maze
-from maze.generator import MazeGenerator
-from maze.solver import MazeSolver
+from Maze.maze import Maze
+from Maze.generator import MazeGenerator
+from Maze.solver import MazeSolver
 from visualization.draw import MazeDrawer
 from analysis.metrics import Metrics 
 
